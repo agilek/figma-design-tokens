@@ -821,22 +821,23 @@
         }
         let sidebarItems = [];
         let sectionsHtml = "";
-        function renderCollectionContent(collectionName, collectionData) {
+        function renderCollectionContent(collectionName, collectionData, categoryName) {
           let html = "";
           const modeEntries = Object.entries(collectionData);
           const hasMultipleModes = modeEntries.length > 1 || modeEntries.length === 1 && !isToken(modeEntries[0][1]);
+          const basePath = [categoryName, collectionName];
           if (hasMultipleModes) {
             for (const [modeName, modeData] of modeEntries) {
               if (typeof modeData !== "object" || modeData === null) continue;
               html += `
           <div class="mode-section">
             <div class="mode-title">${escapeHtml(modeName)}</div>
-            ${renderTokenGroup(modeData, [])}
+            ${renderTokenGroup(modeData, basePath)}
           </div>
         `;
             }
           } else {
-            html += renderTokenGroup(collectionData, []);
+            html += renderTokenGroup(collectionData, basePath);
           }
           return html;
         }
@@ -870,7 +871,7 @@
         <div class="category-title">${escapeHtml(category.name)}</div>
     `;
           for (const [collectionName, collectionData] of collections) {
-            sectionsHtml += renderCollectionContent(collectionName, collectionData);
+            sectionsHtml += renderCollectionContent(collectionName, collectionData, category.name);
           }
           sectionsHtml += `</section>`;
         }
@@ -881,7 +882,7 @@
         <div class="category-title">Other</div>
     `;
           for (const [collectionName, collectionData] of uncategorized) {
-            sectionsHtml += renderCollectionContent(collectionName, collectionData);
+            sectionsHtml += renderCollectionContent(collectionName, collectionData, "Other");
           }
           sectionsHtml += `</section>`;
         }

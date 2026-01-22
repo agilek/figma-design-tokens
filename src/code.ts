@@ -1009,10 +1009,13 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
   let sectionsHtml = '';
 
   // Helper to render a collection's content
-  function renderCollectionContent(collectionName: string, collectionData: W3CTokenGroup): string {
+  function renderCollectionContent(collectionName: string, collectionData: W3CTokenGroup, categoryName: string): string {
     let html = '';
     const modeEntries = Object.entries(collectionData);
     const hasMultipleModes = modeEntries.length > 1 || (modeEntries.length === 1 && !isToken(modeEntries[0][1]));
+
+    // Start path with category name for proper token type detection
+    const basePath = [categoryName, collectionName];
 
     if (hasMultipleModes) {
       for (const [modeName, modeData] of modeEntries) {
@@ -1020,12 +1023,12 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
         html += `
           <div class="mode-section">
             <div class="mode-title">${escapeHtml(modeName)}</div>
-            ${renderTokenGroup(modeData as W3CTokenGroup, [])}
+            ${renderTokenGroup(modeData as W3CTokenGroup, basePath)}
           </div>
         `;
       }
     } else {
-      html += renderTokenGroup(collectionData, []);
+      html += renderTokenGroup(collectionData, basePath);
     }
     return html;
   }
@@ -1068,7 +1071,7 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
     `;
 
     for (const [collectionName, collectionData] of collections) {
-      sectionsHtml += renderCollectionContent(collectionName, collectionData);
+      sectionsHtml += renderCollectionContent(collectionName, collectionData, category.name);
     }
 
     sectionsHtml += `</section>`;
@@ -1082,7 +1085,7 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
         <div class="category-title">Other</div>
     `;
     for (const [collectionName, collectionData] of uncategorized) {
-      sectionsHtml += renderCollectionContent(collectionName, collectionData);
+      sectionsHtml += renderCollectionContent(collectionName, collectionData, 'Other');
     }
     sectionsHtml += `</section>`;
   }
