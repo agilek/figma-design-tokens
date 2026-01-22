@@ -792,10 +792,19 @@ function buildFontPrimitiveLookup(tokens: W3CTokenGroup, path: string[] = []): M
 }
 
 // Resolve a font reference like {font.size.base} to its value
-function resolveFontReference(ref: string): string | number {
+function resolveFontReference(ref: string | number | undefined): string | number {
+  // Handle non-string inputs
+  if (ref === undefined || ref === null) return '';
+  if (typeof ref === 'number') return ref;
+  if (typeof ref !== 'string') return String(ref);
+
+  // If not a reference, return as-is
   if (!ref.startsWith('{')) return ref;
-  const key = ref.replace(/^\{|\}$/g, '');
-  return fontPrimitiveLookup.get(key) ?? ref;
+
+  // Extract key and look up
+  const key = ref.slice(1, -1); // Remove { and }
+  const resolved = fontPrimitiveLookup.get(key);
+  return resolved !== undefined ? resolved : ref;
 }
 
 function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, fileName: string): string {
@@ -1449,14 +1458,31 @@ function renderTypographyToken(name: string, token: W3CToken): string {
   }
 
   // Resolve references for preview (need actual CSS values)
-  const resolvedFamily = String(resolveFontReference(typo.fontFamily ?? ''));
-  const resolvedSize = String(resolveFontReference(typo.fontSize ?? '16px'));
-  const resolvedWeight = resolveFontReference(typo.fontWeight ?? '400');
-  const resolvedLineHeight = String(resolveFontReference(typo.lineHeight ?? '1.5'));
-  const resolvedLetterSpacing = String(resolveFontReference(typo.letterSpacing ?? '0'));
+  const resolvedFamily = String(resolveFontReference(typo.fontFamily));
+  let resolvedSize = String(resolveFontReference(typo.fontSize));
+  const resolvedWeight = resolveFontReference(typo.fontWeight);
+  const resolvedLineHeight = String(resolveFontReference(typo.lineHeight));
+  const resolvedLetterSpacing = String(resolveFontReference(typo.letterSpacing));
+
+  // If size resolution failed (still a reference), use fallback
+  if (!resolvedSize || resolvedSize.startsWith('{')) {
+    resolvedSize = '16px';
+  }
+
+  // Ensure size has unit
+  if (resolvedSize && !resolvedSize.includes('px') && !resolvedSize.includes('%') && !resolvedSize.includes('em') && !resolvedSize.includes('rem')) {
+    const num = parseFloat(resolvedSize);
+    if (!isNaN(num)) {
+      resolvedSize = `${num}px`;
+    }
+  }
+
+  // Cap preview size for readability (but show actual value in metadata)
+  const sizeNum = parseFloat(resolvedSize);
+  const cappedSize = !isNaN(sizeNum) ? `${Math.min(sizeNum, 48)}px` : '16px';
 
   // Build inline style for preview using resolved values
-  const previewStyle = `font-family: "${escapeHtml(resolvedFamily)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
+  const previewStyle = `font-family: "${escapeHtml(resolvedFamily)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${cappedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
 
   // Build copy value as CSS with resolved values
   const copyValue = `font-family: ${resolvedFamily}, -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;

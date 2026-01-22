@@ -616,10 +616,13 @@
         return lookup;
       }
       function resolveFontReference(ref) {
-        var _a;
+        if (ref === void 0 || ref === null) return "";
+        if (typeof ref === "number") return ref;
+        if (typeof ref !== "string") return String(ref);
         if (!ref.startsWith("{")) return ref;
-        const key = ref.replace(/^\{|\}$/g, "");
-        return (_a = fontPrimitiveLookup.get(key)) != null ? _a : ref;
+        const key = ref.slice(1, -1);
+        const resolved = fontPrimitiveLookup.get(key);
+        return resolved !== void 0 ? resolved : ref;
       }
       function generateHtmlPreview(tokens, fileUrl, fileName) {
         colorLookup = buildColorLookup(tokens);
@@ -1166,7 +1169,7 @@
   `;
       }
       function renderTypographyToken(name, token) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a;
         const typo = token.$value;
         if (!typo || typeof typo !== "object" || !typo.fontFamily) {
           const rawValue = typeof token.$value === "object" ? JSON.stringify(token.$value) : String((_a = token.$value) != null ? _a : "");
@@ -1180,12 +1183,23 @@
       </div>
     `;
         }
-        const resolvedFamily = String(resolveFontReference((_b = typo.fontFamily) != null ? _b : ""));
-        const resolvedSize = String(resolveFontReference((_c = typo.fontSize) != null ? _c : "16px"));
-        const resolvedWeight = resolveFontReference((_d = typo.fontWeight) != null ? _d : "400");
-        const resolvedLineHeight = String(resolveFontReference((_e = typo.lineHeight) != null ? _e : "1.5"));
-        const resolvedLetterSpacing = String(resolveFontReference((_f = typo.letterSpacing) != null ? _f : "0"));
-        const previewStyle = `font-family: "${escapeHtml(resolvedFamily)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
+        const resolvedFamily = String(resolveFontReference(typo.fontFamily));
+        let resolvedSize = String(resolveFontReference(typo.fontSize));
+        const resolvedWeight = resolveFontReference(typo.fontWeight);
+        const resolvedLineHeight = String(resolveFontReference(typo.lineHeight));
+        const resolvedLetterSpacing = String(resolveFontReference(typo.letterSpacing));
+        if (!resolvedSize || resolvedSize.startsWith("{")) {
+          resolvedSize = "16px";
+        }
+        if (resolvedSize && !resolvedSize.includes("px") && !resolvedSize.includes("%") && !resolvedSize.includes("em") && !resolvedSize.includes("rem")) {
+          const num = parseFloat(resolvedSize);
+          if (!isNaN(num)) {
+            resolvedSize = `${num}px`;
+          }
+        }
+        const sizeNum = parseFloat(resolvedSize);
+        const cappedSize = !isNaN(sizeNum) ? `${Math.min(sizeNum, 48)}px` : "16px";
+        const previewStyle = `font-family: "${escapeHtml(resolvedFamily)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${cappedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
         const copyValue = `font-family: ${resolvedFamily}, -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
         const isRef = (val) => typeof val === "string" && val.startsWith("{");
         const formatValue = (ref, resolved) => {
