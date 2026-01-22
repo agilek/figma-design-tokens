@@ -80,11 +80,18 @@
       background: #e8f0fe;
       color: #1967d2;
     }
+    a {
+      color: #0d99ff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <h1>Export Design Tokens</h1>
-  <p>Export your Figma variables to W3C Design Tokens format.</p>
+  <p>Export your Figma variables to <a href="https://www.designtokens.org" target="_blank">W3C Design Tokens</a> format.</p>
   <div class="btn-group">
     <button id="export-json-btn">Export JSON</button>
     <button id="export-html-btn" class="secondary">Export HTML Preview</button>
