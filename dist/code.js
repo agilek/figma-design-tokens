@@ -28,7 +28,7 @@
   // src/code.ts
   var require_code = __commonJS({
     "src/code.ts"(exports) {
-      figma.showUI(__html__, { width: 320, height: 180 });
+      figma.showUI(__html__, { width: 280, height: 180 });
       figma.ui.onmessage = (msg) => __async(exports, null, function* () {
         if (msg.type === "export-json" || msg.type === "export-html") {
           const file = yield exportTokens(msg.type === "export-html");
