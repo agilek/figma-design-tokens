@@ -1211,7 +1211,7 @@
         return `
     <div class="typography-row" data-copy="${escapeHtml(copyValue)}" style="cursor:pointer">
       <div class="token-name">${escapeHtml(name)}</div>
-      <div class="typography-preview" style="${previewStyle}">
+      <div class="typography-preview" style="${previewStyle}" title="Size: ${cappedSize}">
         The quick brown fox jumps over the lazy dog
       </div>
       <div class="typography-meta">
