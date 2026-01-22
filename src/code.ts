@@ -539,20 +539,20 @@ function convertEffectStyleToToken(
 }
 
 // Order token groups according to priority
-// Color → Typography → Dimension/Spacing → Shadows → Borders → Opacity → Animations
+// Color → Typography → font (primitives) → Dimension/Spacing → Shadows → Borders → Opacity → Animations
 function orderTokenGroups(tokens: W3CTokenGroup): W3CTokenGroup {
   const orderedKeys: string[] = [];
-  const remainingKeys: string[] = [];
 
-  // Define category patterns in order of priority
+  // Define category patterns in order of priority (more specific patterns first)
   const categoryPatterns = [
-    /color/i,
-    /typography|font|text/i,
-    /dimension|spacing|size|width|height/i,
-    /shadow|elevation/i,
-    /border|radius/i,
-    /opacity|alpha/i,
-    /animation|transition|duration|easing/i
+    /^color/i,                                    // Colors (foundation)
+    /^typography$/i,                              // Typography composites
+    /^font$/i,                                    // Font primitives
+    /dimension|spacing|size|width|height/i,       // Dimension / Spacing
+    /shadow|elevation/i,                          // Shadows / Elevation
+    /border|radius/i,                             // Borders / Radius
+    /opacity|alpha/i,                             // Opacity
+    /animation|transition|duration|easing/i       // Animations / Transitions
   ];
 
   const keys = Object.keys(tokens);
@@ -571,13 +571,14 @@ function orderTokenGroups(tokens: W3CTokenGroup): W3CTokenGroup {
   // Add any remaining uncategorized keys at the end
   for (const key of keys) {
     if (!categorized.has(key)) {
-      remainingKeys.push(key);
+      orderedKeys.push(key);
+      categorized.add(key);
     }
   }
 
   // Build ordered object
   const ordered: W3CTokenGroup = {};
-  for (const key of [...orderedKeys, ...remainingKeys]) {
+  for (const key of orderedKeys) {
     ordered[key] = tokens[key];
   }
 

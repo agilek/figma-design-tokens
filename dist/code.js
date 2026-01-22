@@ -428,15 +428,23 @@
       }
       function orderTokenGroups(tokens) {
         const orderedKeys = [];
-        const remainingKeys = [];
         const categoryPatterns = [
-          /color/i,
-          /typography|font|text/i,
+          /^color/i,
+          // Colors (foundation)
+          /^typography$/i,
+          // Typography composites
+          /^font$/i,
+          // Font primitives
           /dimension|spacing|size|width|height/i,
+          // Dimension / Spacing
           /shadow|elevation/i,
+          // Shadows / Elevation
           /border|radius/i,
+          // Borders / Radius
           /opacity|alpha/i,
+          // Opacity
           /animation|transition|duration|easing/i
+          // Animations / Transitions
         ];
         const keys = Object.keys(tokens);
         const categorized = /* @__PURE__ */ new Set();
@@ -450,11 +458,12 @@
         }
         for (const key of keys) {
           if (!categorized.has(key)) {
-            remainingKeys.push(key);
+            orderedKeys.push(key);
+            categorized.add(key);
           }
         }
         const ordered = {};
-        for (const key of [...orderedKeys, ...remainingKeys]) {
+        for (const key of orderedKeys) {
           ordered[key] = tokens[key];
         }
         return ordered;
