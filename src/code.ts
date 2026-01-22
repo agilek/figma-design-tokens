@@ -828,7 +828,7 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
     h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
     .subtitle { color: #747474; margin-bottom: 32px; }
     section { margin-bottom: 48px; scroll-margin-top: 16px; }
-    .section-title {
+    .category-title {
       font-size: 16px;
       font-weight: 600;
       padding: 12px 16px;
@@ -837,6 +837,17 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
       border-radius: 6px;
       margin-bottom: 20px;
       letter-spacing: 0.3px;
+    }
+    .mode-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      padding: 8px 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .mode-section {
+      margin-bottom: 32px;
     }
     .section-desc { color: #747474; margin-bottom: 16px; }
     .subsection-title {
@@ -951,23 +962,31 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
     const hasMultipleModes = modeEntries.length > 1 || (modeEntries.length === 1 && !isToken(modeEntries[0][1]));
 
     if (hasMultipleModes) {
+      // Start with the category header stripe
+      sectionsHtml += `
+        <section id="${collectionId}">
+          <div class="category-title">${escapeHtml(collectionName)}</div>
+      `;
+
+      // Add each mode as a sub-section
       for (const [modeName, modeData] of modeEntries) {
         if (typeof modeData !== 'object' || modeData === null) continue;
 
         const sectionId = `${collectionName}-${modeName}`.toLowerCase().replace(/\s+/g, '-');
-        const isFirstMode = modeEntries[0][0] === modeName;
 
         sectionsHtml += `
-          <section id="${isFirstMode ? collectionId : sectionId}">
-            <div class="section-title">${escapeHtml(collectionName)} / ${escapeHtml(modeName)}</div>
+          <div id="${sectionId}" class="mode-section">
+            <div class="mode-title">${escapeHtml(modeName)}</div>
             ${renderTokenGroup(modeData as W3CTokenGroup, [])}
-          </section>
+          </div>
         `;
       }
+
+      sectionsHtml += `</section>`;
     } else {
       sectionsHtml += `
         <section id="${collectionId}">
-          <div class="section-title">${escapeHtml(collectionName)}</div>
+          <div class="category-title">${escapeHtml(collectionName)}</div>
           ${renderTokenGroup(modes, [])}
         </section>
       `;
