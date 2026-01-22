@@ -1199,7 +1199,7 @@
         }
         const sizeNum = parseFloat(resolvedSize);
         const cappedSize = !isNaN(sizeNum) ? `${Math.min(sizeNum, 48)}px` : "16px";
-        const previewStyle = `font-family: "${escapeHtml(resolvedFamily)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${cappedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
+        const previewStyle = `font-family: '${resolvedFamily}', -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${cappedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
         const copyValue = `font-family: ${resolvedFamily}, -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
         const isRef = (val) => typeof val === "string" && val.startsWith("{");
         const formatValue = (ref, resolved) => {

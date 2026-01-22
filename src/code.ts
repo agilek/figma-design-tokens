@@ -1482,7 +1482,8 @@ function renderTypographyToken(name: string, token: W3CToken): string {
   const cappedSize = !isNaN(sizeNum) ? `${Math.min(sizeNum, 48)}px` : '16px';
 
   // Build inline style for preview using resolved values
-  const previewStyle = `font-family: "${escapeHtml(resolvedFamily)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${cappedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
+  // Use single quotes for font-family to avoid breaking the style="" attribute
+  const previewStyle = `font-family: '${resolvedFamily}', -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${cappedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
 
   // Build copy value as CSS with resolved values
   const copyValue = `font-family: ${resolvedFamily}, -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
