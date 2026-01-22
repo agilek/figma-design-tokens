@@ -1149,8 +1149,10 @@ function renderTokenGroup(group: W3CTokenGroup, path: string[]): string {
         typographyTokens.push({ name: key, token });
       } else if (token.$type === 'shadow') {
         shadowTokens.push({ name: key, token });
-      } else if (token.$type === 'number') {
+      } else if (token.$type === 'number' || token.$type === 'fontWeight') {
         numberTokens.push({ name: key, token });
+      } else if (token.$type === 'dimension' || token.$type === 'fontFamily') {
+        stringTokens.push({ name: key, token });
       } else {
         stringTokens.push({ name: key, token });
       }
@@ -1314,18 +1316,34 @@ function renderColorToken(name: string, token: W3CToken): string {
 
 function renderNumberToken(name: string, token: W3CToken, isSpacing: boolean): string {
   const value = typeof token.$value === 'number' ? token.$value : 0;
+  const isFontWeight = token.$type === 'fontWeight';
+  const displayValue = isFontWeight ? String(value) : `${value}px`;
+
+  if (isFontWeight) {
+    return `
+      <div class="token-row" data-copy="${value}" style="cursor:pointer">
+        <div class="number-preview" style="font-weight: ${value}; font-size: 14px;">
+          Aa
+        </div>
+        <div class="token-info">
+          <div class="token-name">${escapeHtml(name)}</div>
+          <div class="token-value">${value}</div>
+        </div>
+      </div>
+    `;
+  }
 
   if (isSpacing) {
     const barWidth = Math.min(Math.max(value, 2), 80);
     const barHeight = Math.min(Math.max(value, 2), 32);
     return `
-      <div class="token-row" data-copy="${value}px" style="cursor:pointer">
+      <div class="token-row" data-copy="${displayValue}" style="cursor:pointer">
         <div class="spacing-preview-container">
           <div class="spacing-bar" style="width: ${barWidth}px; height: ${barHeight}px;"></div>
         </div>
         <div class="token-info">
           <div class="token-name">${escapeHtml(name)}</div>
-          <div class="token-value">${value}px</div>
+          <div class="token-value">${displayValue}</div>
         </div>
       </div>
     `;
@@ -1334,13 +1352,13 @@ function renderNumberToken(name: string, token: W3CToken, isSpacing: boolean): s
   // Radius preview
   const previewRadius = Math.min(value, 20);
   return `
-    <div class="token-row" data-copy="${value}px" style="cursor:pointer">
+    <div class="token-row" data-copy="${displayValue}" style="cursor:pointer">
       <div class="number-preview radius-preview" style="border-radius: ${previewRadius}px;">
         ${value}
       </div>
       <div class="token-info">
         <div class="token-name">${escapeHtml(name)}</div>
-        <div class="token-value">${value}px</div>
+        <div class="token-value">${displayValue}</div>
       </div>
     </div>
   `;
@@ -1348,10 +1366,26 @@ function renderNumberToken(name: string, token: W3CToken, isSpacing: boolean): s
 
 function renderStringToken(name: string, token: W3CToken): string {
   const value = String(token.$value);
+  const isFontFamily = token.$type === 'fontFamily';
+  const isDimension = token.$type === 'dimension';
+
+  let preview = 'Aa';
+  let previewStyle = 'font-size: 10px;';
+
+  if (token.$type === 'boolean') {
+    preview = token.$value ? '✓' : '✗';
+  } else if (isFontFamily) {
+    preview = 'Aa';
+    previewStyle = `font-family: ${value}, sans-serif; font-size: 14px;`;
+  } else if (isDimension) {
+    preview = value;
+    previewStyle = 'font-size: 11px; font-weight: 500;';
+  }
+
   return `
     <div class="token-row" data-copy="${escapeHtml(value)}" style="cursor:pointer">
-      <div class="number-preview" style="font-size: 10px;">
-        ${token.$type === 'boolean' ? (token.$value ? '✓' : '✗') : 'Aa'}
+      <div class="number-preview" style="${previewStyle}">
+        ${preview}
       </div>
       <div class="token-info">
         <div class="token-name">${escapeHtml(name)}</div>
