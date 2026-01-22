@@ -1011,14 +1011,21 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
   // Helper to render a collection's content
   function renderCollectionContent(collectionName: string, collectionData: W3CTokenGroup, categoryName: string): string {
     let html = '';
-    const modeEntries = Object.entries(collectionData);
-    const hasMultipleModes = modeEntries.length > 1 || (modeEntries.length === 1 && !isToken(modeEntries[0][1]));
+    const entries = Object.entries(collectionData);
 
     // Start path with category name for proper token type detection
     const basePath = [categoryName, collectionName];
 
-    if (hasMultipleModes) {
-      for (const [modeName, modeData] of modeEntries) {
+    // Check if collection contains direct tokens or nested groups (modes)
+    // If ANY entry is a token, render the whole collection as a token group
+    const hasDirectTokens = entries.some(([_, value]) => isToken(value));
+
+    if (hasDirectTokens) {
+      // Collection contains tokens directly - render as token group
+      html += renderTokenGroup(collectionData, basePath);
+    } else {
+      // Collection contains nested groups (modes) - render each as a section
+      for (const [modeName, modeData] of entries) {
         if (typeof modeData !== 'object' || modeData === null) continue;
         html += `
           <div class="mode-section">
@@ -1027,8 +1034,6 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
           </div>
         `;
       }
-    } else {
-      html += renderTokenGroup(collectionData, basePath);
     }
     return html;
   }

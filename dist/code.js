@@ -823,11 +823,13 @@
         let sectionsHtml = "";
         function renderCollectionContent(collectionName, collectionData, categoryName) {
           let html = "";
-          const modeEntries = Object.entries(collectionData);
-          const hasMultipleModes = modeEntries.length > 1 || modeEntries.length === 1 && !isToken(modeEntries[0][1]);
+          const entries = Object.entries(collectionData);
           const basePath = [categoryName, collectionName];
-          if (hasMultipleModes) {
-            for (const [modeName, modeData] of modeEntries) {
+          const hasDirectTokens = entries.some(([_, value]) => isToken(value));
+          if (hasDirectTokens) {
+            html += renderTokenGroup(collectionData, basePath);
+          } else {
+            for (const [modeName, modeData] of entries) {
               if (typeof modeData !== "object" || modeData === null) continue;
               html += `
           <div class="mode-section">
@@ -836,8 +838,6 @@
           </div>
         `;
             }
-          } else {
-            html += renderTokenGroup(collectionData, basePath);
           }
           return html;
         }
