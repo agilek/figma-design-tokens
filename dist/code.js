@@ -809,7 +809,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Design Tokens Preview</title>
+  <title>${escapeHtml(fileName)} design tokens</title>
   <style>${css}</style>
 </head>
 <body>
@@ -821,7 +821,7 @@
   </aside>
   <main class="main-content">
     <div class="container">
-      <h1>${escapeHtml(fileName)}</h1>
+      <h1>${escapeHtml(fileName)} design tokens</h1>
       <p class="subtitle">${fileUrl ? `<a href="${fileUrl}" target="_blank" style="color: #0d99ff;">Open in Figma \u2197</a> \xB7 ` : ""}Click any value to copy.</p>
       ${sectionsHtml}
     </div>
