@@ -997,10 +997,12 @@
             const valB = typeof b.token.$value === "number" ? b.token.$value : 0;
             return valA - valB;
           });
-          const isSpacing = path.some((p) => p.toLowerCase().includes("spacing"));
+          const pathLower = path.map((p) => p.toLowerCase()).join(".");
+          const isSpacing = pathLower.includes("spacing") || pathLower.includes("gap");
+          const isBorder = pathLower.includes("border") || pathLower.includes("radius") || pathLower.includes("stroke");
           html += `<div class="token-grid">`;
           for (const { name, token } of numberTokens) {
-            html += renderNumberToken(name, token, isSpacing);
+            html += renderNumberToken(name, token, isSpacing, isBorder);
           }
           html += `</div>`;
         }
@@ -1072,7 +1074,7 @@
     </div>
   `;
       }
-      function renderNumberToken(name, token, isSpacing) {
+      function renderNumberToken(name, token, isSpacing, isBorder) {
         const value = typeof token.$value === "number" ? token.$value : 0;
         const isFontWeight = token.$type === "fontWeight";
         const displayValue = isFontWeight ? String(value) : `${value}px`;
@@ -1090,12 +1092,11 @@
     `;
         }
         if (isSpacing) {
-          const barWidth = Math.min(Math.max(value, 2), 80);
-          const barHeight = Math.min(Math.max(value, 2), 32);
+          const barWidth = Math.min(Math.max(value * 2, 4), 100);
           return `
       <div class="token-row" data-copy="${displayValue}" style="cursor:pointer">
         <div class="spacing-preview-container">
-          <div class="spacing-bar" style="width: ${barWidth}px; height: ${barHeight}px;"></div>
+          <div class="spacing-bar" style="width: ${barWidth}px; height: 8px;"></div>
         </div>
         <div class="token-info">
           <div class="token-name">${escapeHtml(name)}</div>
@@ -1104,10 +1105,23 @@
       </div>
     `;
         }
-        const previewRadius = Math.min(value, 20);
+        if (isBorder) {
+          const previewRadius = Math.min(value, 20);
+          return `
+      <div class="token-row" data-copy="${displayValue}" style="cursor:pointer">
+        <div class="number-preview radius-preview" style="border-radius: ${previewRadius}px;">
+          ${value}
+        </div>
+        <div class="token-info">
+          <div class="token-name">${escapeHtml(name)}</div>
+          <div class="token-value">${displayValue}</div>
+        </div>
+      </div>
+    `;
+        }
         return `
     <div class="token-row" data-copy="${displayValue}" style="cursor:pointer">
-      <div class="number-preview radius-preview" style="border-radius: ${previewRadius}px;">
+      <div class="number-preview" style="font-size: 12px; font-weight: 500;">
         ${value}
       </div>
       <div class="token-info">

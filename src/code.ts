@@ -1214,12 +1214,14 @@ function renderTokenGroup(group: W3CTokenGroup, path: string[]): string {
       return valA - valB;
     });
 
-    // Detect if spacing or radius based on path
-    const isSpacing = path.some(p => p.toLowerCase().includes('spacing'));
+    // Detect token category based on path
+    const pathLower = path.map(p => p.toLowerCase()).join('.');
+    const isSpacing = pathLower.includes('spacing') || pathLower.includes('gap');
+    const isBorder = pathLower.includes('border') || pathLower.includes('radius') || pathLower.includes('stroke');
 
     html += `<div class="token-grid">`;
     for (const { name, token } of numberTokens) {
-      html += renderNumberToken(name, token, isSpacing);
+      html += renderNumberToken(name, token, isSpacing, isBorder);
     }
     html += `</div>`;
   }
@@ -1314,7 +1316,7 @@ function renderColorToken(name: string, token: W3CToken): string {
   `;
 }
 
-function renderNumberToken(name: string, token: W3CToken, isSpacing: boolean): string {
+function renderNumberToken(name: string, token: W3CToken, isSpacing: boolean, isBorder: boolean): string {
   const value = typeof token.$value === 'number' ? token.$value : 0;
   const isFontWeight = token.$type === 'fontWeight';
   const displayValue = isFontWeight ? String(value) : `${value}px`;
@@ -1334,12 +1336,12 @@ function renderNumberToken(name: string, token: W3CToken, isSpacing: boolean): s
   }
 
   if (isSpacing) {
-    const barWidth = Math.min(Math.max(value, 2), 80);
-    const barHeight = Math.min(Math.max(value, 2), 32);
+    // Spacing: show a horizontal bar representing the space
+    const barWidth = Math.min(Math.max(value * 2, 4), 100);
     return `
       <div class="token-row" data-copy="${displayValue}" style="cursor:pointer">
         <div class="spacing-preview-container">
-          <div class="spacing-bar" style="width: ${barWidth}px; height: ${barHeight}px;"></div>
+          <div class="spacing-bar" style="width: ${barWidth}px; height: 8px;"></div>
         </div>
         <div class="token-info">
           <div class="token-name">${escapeHtml(name)}</div>
@@ -1349,11 +1351,26 @@ function renderNumberToken(name: string, token: W3CToken, isSpacing: boolean): s
     `;
   }
 
-  // Radius preview
-  const previewRadius = Math.min(value, 20);
+  if (isBorder) {
+    // Border/radius: show a corner with the radius applied
+    const previewRadius = Math.min(value, 20);
+    return `
+      <div class="token-row" data-copy="${displayValue}" style="cursor:pointer">
+        <div class="number-preview radius-preview" style="border-radius: ${previewRadius}px;">
+          ${value}
+        </div>
+        <div class="token-info">
+          <div class="token-name">${escapeHtml(name)}</div>
+          <div class="token-value">${displayValue}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Default: just show the numeric value
   return `
     <div class="token-row" data-copy="${displayValue}" style="cursor:pointer">
-      <div class="number-preview radius-preview" style="border-radius: ${previewRadius}px;">
+      <div class="number-preview" style="font-size: 12px; font-weight: 500;">
         ${value}
       </div>
       <div class="token-info">
