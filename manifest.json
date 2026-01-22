@@ -1,6 +1,6 @@
 {
-  "name": "Design Tokens Export",
-  "id": "design-tokens-export",
+  "name": "Design Tokens Exporter",
+  "id": "design-tokens-exporter",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",
