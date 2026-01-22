@@ -1,6 +1,6 @@
 import type { W3CToken, W3CTokenGroup, W3CColorValue, W3CTypographyValue, W3CShadowValue, W3CShadowLayersValue, ExportResult, ExportMessage, UIMessage } from './types';
 
-figma.showUI(__html__, { width: 320, height: 250 });
+figma.showUI(__html__, { width: 320, height: 180 });
 
 figma.ui.onmessage = async (msg: UIMessage) => {
   if (msg.type === 'export-json' || msg.type === 'export-html') {
