@@ -431,21 +431,15 @@
         const orderedKeys = [];
         const categoryPatterns = [
           /^color/i,
-          // Colors (foundation)
-          /^typography$/i,
-          // Typography composites
-          /^font$/i,
-          // Font primitives
-          /dimension|spacing|size|width|height/i,
-          // Dimension / Spacing
+          // Colors
+          /^typography$|^font$/i,
+          // Typography (composites and primitives)
+          /spacing|dimension|size|width|height|gap/i,
+          // Spacing
           /shadow|elevation/i,
-          // Shadows / Elevation
-          /border|radius/i,
-          // Borders / Radius
-          /opacity|alpha/i,
-          // Opacity
-          /animation|transition|duration|easing/i
-          // Animations / Transitions
+          // Shadows
+          /border|radius|stroke/i
+          // Borders
         ];
         const keys = Object.keys(tokens);
         const categorized = /* @__PURE__ */ new Set();

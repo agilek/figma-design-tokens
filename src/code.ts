@@ -540,20 +540,17 @@ function convertEffectStyleToToken(
 }
 
 // Order token groups according to priority
-// Color → Typography → font (primitives) → Dimension/Spacing → Shadows → Borders → Opacity → Animations
+// Colors → Typography → Spacing → Shadows → Borders
 function orderTokenGroups(tokens: W3CTokenGroup): W3CTokenGroup {
   const orderedKeys: string[] = [];
 
-  // Define category patterns in order of priority (more specific patterns first)
+  // Define category patterns in order of priority
   const categoryPatterns = [
-    /^color/i,                                    // Colors (foundation)
-    /^typography$/i,                              // Typography composites
-    /^font$/i,                                    // Font primitives
-    /dimension|spacing|size|width|height/i,       // Dimension / Spacing
-    /shadow|elevation/i,                          // Shadows / Elevation
-    /border|radius/i,                             // Borders / Radius
-    /opacity|alpha/i,                             // Opacity
-    /animation|transition|duration|easing/i       // Animations / Transitions
+    /^color/i,                                    // Colors
+    /^typography$|^font$/i,                       // Typography (composites and primitives)
+    /spacing|dimension|size|width|height|gap/i,  // Spacing
+    /shadow|elevation/i,                          // Shadows
+    /border|radius|stroke/i                       // Borders
   ];
 
   const keys = Object.keys(tokens);
