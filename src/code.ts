@@ -828,7 +828,16 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
     h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
     .subtitle { color: #747474; margin-bottom: 32px; }
     section { margin-bottom: 48px; scroll-margin-top: 16px; }
-    .section-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      padding: 12px 16px;
+      background: linear-gradient(to right, #1a1a1a, #2d2d2d);
+      color: #ffffff;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      letter-spacing: 0.3px;
+    }
     .section-desc { color: #747474; margin-bottom: 16px; }
     .subsection-title {
       color: #747474; font-weight: 600; text-transform: uppercase;
