@@ -67,16 +67,17 @@ async function exportTokens(asHtml: boolean): Promise<ExportResult | null> {
     merged['Shadows'] = { 'Default': shadowTokens };
   }
 
-  // Apply token ordering
+  // Apply token ordering (groups) and sorting (primitives before aliases)
   const ordered = orderTokenGroups(merged);
+  const sorted = sortPrimitivesBeforeAliases(ordered);
 
   const fileUrl = figma.fileKey ? `https://www.figma.com/file/${figma.fileKey}` : null;
   const fileName = figma.root.name;
 
   if (asHtml) {
-    return { filename: 'tokens-preview.html', content: generateHtmlPreview(ordered, fileUrl, fileName) };
+    return { filename: 'tokens-preview.html', content: generateHtmlPreview(sorted, fileUrl, fileName) };
   } else {
-    return { filename: 'tokens.json', content: JSON.stringify(ordered, null, 2) };
+    return { filename: 'tokens.json', content: JSON.stringify(sorted, null, 2) };
   }
 }
 
@@ -583,6 +584,62 @@ function orderTokenGroups(tokens: W3CTokenGroup): W3CTokenGroup {
   }
 
   return ordered;
+}
+
+// Sort tokens within groups: primitives (direct values) before aliases (references)
+function sortPrimitivesBeforeAliases(tokens: W3CTokenGroup): W3CTokenGroup {
+  const sorted: W3CTokenGroup = {};
+
+  const entries = Object.entries(tokens);
+
+  // Separate tokens and groups
+  const tokenEntries: Array<[string, W3CToken]> = [];
+  const groupEntries: Array<[string, W3CTokenGroup]> = [];
+
+  for (const [key, value] of entries) {
+    if (isToken(value)) {
+      tokenEntries.push([key, value as W3CToken]);
+    } else if (typeof value === 'object' && value !== null) {
+      groupEntries.push([key, value as W3CTokenGroup]);
+    }
+  }
+
+  // Sort tokens: non-references first, then references
+  tokenEntries.sort((a, b) => {
+    const aIsRef = isReferenceValue(a[1].$value);
+    const bIsRef = isReferenceValue(b[1].$value);
+    if (aIsRef === bIsRef) return 0;
+    return aIsRef ? 1 : -1; // non-references first
+  });
+
+  // Add sorted tokens
+  for (const [key, value] of tokenEntries) {
+    sorted[key] = value;
+  }
+
+  // Recursively sort nested groups
+  for (const [key, value] of groupEntries) {
+    sorted[key] = sortPrimitivesBeforeAliases(value);
+  }
+
+  return sorted;
+}
+
+// Check if a token value is a reference (string starting with {)
+function isReferenceValue(value: unknown): boolean {
+  if (typeof value === 'string' && value.startsWith('{')) {
+    return true;
+  }
+  // Check nested values in typography tokens
+  if (typeof value === 'object' && value !== null) {
+    const obj = value as Record<string, unknown>;
+    for (const v of Object.values(obj)) {
+      if (typeof v === 'string' && v.startsWith('{')) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function setNestedValue(obj: W3CTokenGroup, path: string[], value: W3CToken): void {

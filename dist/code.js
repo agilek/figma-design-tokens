@@ -80,12 +80,13 @@
             merged["Shadows"] = { "Default": shadowTokens };
           }
           const ordered = orderTokenGroups(merged);
+          const sorted = sortPrimitivesBeforeAliases(ordered);
           const fileUrl = figma.fileKey ? `https://www.figma.com/file/${figma.fileKey}` : null;
           const fileName = figma.root.name;
           if (asHtml) {
-            return { filename: "tokens-preview.html", content: generateHtmlPreview(ordered, fileUrl, fileName) };
+            return { filename: "tokens-preview.html", content: generateHtmlPreview(sorted, fileUrl, fileName) };
           } else {
-            return { filename: "tokens.json", content: JSON.stringify(ordered, null, 2) };
+            return { filename: "tokens.json", content: JSON.stringify(sorted, null, 2) };
           }
         });
       }
@@ -467,6 +468,46 @@
           ordered[key] = tokens[key];
         }
         return ordered;
+      }
+      function sortPrimitivesBeforeAliases(tokens) {
+        const sorted = {};
+        const entries = Object.entries(tokens);
+        const tokenEntries = [];
+        const groupEntries = [];
+        for (const [key, value] of entries) {
+          if (isToken(value)) {
+            tokenEntries.push([key, value]);
+          } else if (typeof value === "object" && value !== null) {
+            groupEntries.push([key, value]);
+          }
+        }
+        tokenEntries.sort((a, b) => {
+          const aIsRef = isReferenceValue(a[1].$value);
+          const bIsRef = isReferenceValue(b[1].$value);
+          if (aIsRef === bIsRef) return 0;
+          return aIsRef ? 1 : -1;
+        });
+        for (const [key, value] of tokenEntries) {
+          sorted[key] = value;
+        }
+        for (const [key, value] of groupEntries) {
+          sorted[key] = sortPrimitivesBeforeAliases(value);
+        }
+        return sorted;
+      }
+      function isReferenceValue(value) {
+        if (typeof value === "string" && value.startsWith("{")) {
+          return true;
+        }
+        if (typeof value === "object" && value !== null) {
+          const obj = value;
+          for (const v of Object.values(obj)) {
+            if (typeof v === "string" && v.startsWith("{")) {
+              return true;
+            }
+          }
+        }
+        return false;
       }
       function setNestedValue(obj, path, value) {
         let current = obj;
