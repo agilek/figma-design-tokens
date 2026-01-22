@@ -542,8 +542,6 @@ function convertEffectStyleToToken(
 // Order token groups according to priority
 // Colors → Typography → Spacing → Shadows → Borders
 function orderTokenGroups(tokens: W3CTokenGroup): W3CTokenGroup {
-  const orderedKeys: string[] = [];
-
   // Define category patterns in order of priority
   const categoryPatterns = [
     /^color/i,                                    // Colors
@@ -556,23 +554,53 @@ function orderTokenGroups(tokens: W3CTokenGroup): W3CTokenGroup {
   const keys = Object.keys(tokens);
   const categorized = new Set<string>();
 
-  // Sort keys into categories
-  for (const pattern of categoryPatterns) {
-    for (const key of keys) {
-      if (!categorized.has(key) && pattern.test(key)) {
-        orderedKeys.push(key);
+  // Group keys by category
+  const categoryGroups: string[][] = categoryPatterns.map(() => []);
+  const uncategorizedKeys: string[] = [];
+
+  for (const key of keys) {
+    let matched = false;
+    for (let i = 0; i < categoryPatterns.length; i++) {
+      if (categoryPatterns[i].test(key)) {
+        categoryGroups[i].push(key);
         categorized.add(key);
+        matched = true;
+        break;
       }
+    }
+    if (!matched) {
+      uncategorizedKeys.push(key);
     }
   }
 
-  // Add any remaining uncategorized keys at the end
-  for (const key of keys) {
-    if (!categorized.has(key)) {
-      orderedKeys.push(key);
-      categorized.add(key);
+  // Helper to check if a group contains references
+  function groupHasReferences(data: W3CTokenGroup): boolean {
+    for (const value of Object.values(data)) {
+      if (isToken(value)) {
+        if (isReferenceValue((value as W3CToken).$value)) {
+          return true;
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        if (groupHasReferences(value as W3CTokenGroup)) {
+          return true;
+        }
+      }
     }
+    return false;
   }
+
+  // Sort keys within each category: primitives first, then aliases
+  for (const group of categoryGroups) {
+    group.sort((a, b) => {
+      const aHasRefs = groupHasReferences(tokens[a] as W3CTokenGroup);
+      const bHasRefs = groupHasReferences(tokens[b] as W3CTokenGroup);
+      if (aHasRefs === bHasRefs) return 0;
+      return aHasRefs ? 1 : -1; // primitives first
+    });
+  }
+
+  // Build ordered keys list
+  const orderedKeys = [...categoryGroups.flat(), ...uncategorizedKeys];
 
   // Build ordered object
   const ordered: W3CTokenGroup = {};
@@ -1002,10 +1030,34 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
     return html;
   }
 
+  // Helper to check if a collection contains mostly references
+  function collectionHasReferences(data: W3CTokenGroup): boolean {
+    for (const value of Object.values(data)) {
+      if (isToken(value)) {
+        if (isReferenceValue((value as W3CToken).$value)) {
+          return true;
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        if (collectionHasReferences(value as W3CTokenGroup)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   // Process high-level categories in order
   for (const category of highLevelCategories) {
     const collections = categorizedCollections.get(category.name);
     if (!collections || collections.length === 0) continue;
+
+    // Sort collections: primitives (no references) first, then aliases
+    collections.sort((a, b) => {
+      const aHasRefs = collectionHasReferences(a[1]);
+      const bHasRefs = collectionHasReferences(b[1]);
+      if (aHasRefs === bHasRefs) return 0;
+      return aHasRefs ? 1 : -1; // primitives first
+    });
 
     const categoryId = category.name.toLowerCase();
     sidebarItems.push(`<a href="#${categoryId}">${escapeHtml(category.name)}</a>`);

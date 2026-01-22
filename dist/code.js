@@ -428,7 +428,6 @@
         };
       }
       function orderTokenGroups(tokens) {
-        const orderedKeys = [];
         const categoryPatterns = [
           /^color/i,
           // Colors
@@ -443,20 +442,45 @@
         ];
         const keys = Object.keys(tokens);
         const categorized = /* @__PURE__ */ new Set();
-        for (const pattern of categoryPatterns) {
-          for (const key of keys) {
-            if (!categorized.has(key) && pattern.test(key)) {
-              orderedKeys.push(key);
+        const categoryGroups = categoryPatterns.map(() => []);
+        const uncategorizedKeys = [];
+        for (const key of keys) {
+          let matched = false;
+          for (let i = 0; i < categoryPatterns.length; i++) {
+            if (categoryPatterns[i].test(key)) {
+              categoryGroups[i].push(key);
               categorized.add(key);
+              matched = true;
+              break;
             }
           }
-        }
-        for (const key of keys) {
-          if (!categorized.has(key)) {
-            orderedKeys.push(key);
-            categorized.add(key);
+          if (!matched) {
+            uncategorizedKeys.push(key);
           }
         }
+        function groupHasReferences(data) {
+          for (const value of Object.values(data)) {
+            if (isToken(value)) {
+              if (isReferenceValue(value.$value)) {
+                return true;
+              }
+            } else if (typeof value === "object" && value !== null) {
+              if (groupHasReferences(value)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+        for (const group of categoryGroups) {
+          group.sort((a, b) => {
+            const aHasRefs = groupHasReferences(tokens[a]);
+            const bHasRefs = groupHasReferences(tokens[b]);
+            if (aHasRefs === bHasRefs) return 0;
+            return aHasRefs ? 1 : -1;
+          });
+        }
+        const orderedKeys = [...categoryGroups.flat(), ...uncategorizedKeys];
         const ordered = {};
         for (const key of orderedKeys) {
           ordered[key] = tokens[key];
@@ -816,9 +840,29 @@
           }
           return html;
         }
+        function collectionHasReferences(data) {
+          for (const value of Object.values(data)) {
+            if (isToken(value)) {
+              if (isReferenceValue(value.$value)) {
+                return true;
+              }
+            } else if (typeof value === "object" && value !== null) {
+              if (collectionHasReferences(value)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
         for (const category of highLevelCategories) {
           const collections = categorizedCollections.get(category.name);
           if (!collections || collections.length === 0) continue;
+          collections.sort((a, b) => {
+            const aHasRefs = collectionHasReferences(a[1]);
+            const bHasRefs = collectionHasReferences(b[1]);
+            if (aHasRefs === bHasRefs) return 0;
+            return aHasRefs ? 1 : -1;
+          });
           const categoryId = category.name.toLowerCase();
           sidebarItems.push(`<a href="#${categoryId}">${escapeHtml(category.name)}</a>`);
           sectionsHtml += `
