@@ -945,52 +945,94 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
     .shadow-meta .label { color: #939393; }
   `;
 
-  let sidebarItems: string[] = [];
-  let sectionsHtml = '';
+  // Define high-level categories and their patterns
+  const highLevelCategories = [
+    { name: 'Colors', pattern: /^color/i },
+    { name: 'Typography', pattern: /^typography$|^font$/i },
+    { name: 'Spacing', pattern: /spacing|dimension|size|width|height|gap/i },
+    { name: 'Shadows', pattern: /shadow|elevation/i },
+    { name: 'Borders', pattern: /border|radius|stroke/i }
+  ];
 
-  // Process each collection
+  // Group collections by high-level category
+  const categorizedCollections: Map<string, Array<[string, W3CTokenGroup]>> = new Map();
+  const uncategorized: Array<[string, W3CTokenGroup]> = [];
+
   for (const [collectionName, collectionData] of Object.entries(tokens)) {
     if (typeof collectionData !== 'object' || collectionData === null) continue;
 
-    const collectionId = collectionName.toLowerCase().replace(/\s+/g, '-');
-    sidebarItems.push(`<a href="#${collectionId}">${escapeHtml(collectionName)}</a>`);
+    let matched = false;
+    for (const category of highLevelCategories) {
+      if (category.pattern.test(collectionName)) {
+        if (!categorizedCollections.has(category.name)) {
+          categorizedCollections.set(category.name, []);
+        }
+        categorizedCollections.get(category.name)!.push([collectionName, collectionData as W3CTokenGroup]);
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      uncategorized.push([collectionName, collectionData as W3CTokenGroup]);
+    }
+  }
 
-    const modes = collectionData as W3CTokenGroup;
+  let sidebarItems: string[] = [];
+  let sectionsHtml = '';
 
-    // Check if this collection has modes (nested structure) or direct tokens
-    const modeEntries = Object.entries(modes);
+  // Helper to render a collection's content
+  function renderCollectionContent(collectionName: string, collectionData: W3CTokenGroup): string {
+    let html = '';
+    const modeEntries = Object.entries(collectionData);
     const hasMultipleModes = modeEntries.length > 1 || (modeEntries.length === 1 && !isToken(modeEntries[0][1]));
 
     if (hasMultipleModes) {
-      // Start with the category header stripe
-      sectionsHtml += `
-        <section id="${collectionId}">
-          <div class="category-title">${escapeHtml(collectionName)}</div>
-      `;
-
-      // Add each mode as a sub-section
       for (const [modeName, modeData] of modeEntries) {
         if (typeof modeData !== 'object' || modeData === null) continue;
-
-        const sectionId = `${collectionName}-${modeName}`.toLowerCase().replace(/\s+/g, '-');
-
-        sectionsHtml += `
-          <div id="${sectionId}" class="mode-section">
+        html += `
+          <div class="mode-section">
             <div class="mode-title">${escapeHtml(modeName)}</div>
             ${renderTokenGroup(modeData as W3CTokenGroup, [])}
           </div>
         `;
       }
-
-      sectionsHtml += `</section>`;
     } else {
-      sectionsHtml += `
-        <section id="${collectionId}">
-          <div class="category-title">${escapeHtml(collectionName)}</div>
-          ${renderTokenGroup(modes, [])}
-        </section>
-      `;
+      html += renderTokenGroup(collectionData, []);
     }
+    return html;
+  }
+
+  // Process high-level categories in order
+  for (const category of highLevelCategories) {
+    const collections = categorizedCollections.get(category.name);
+    if (!collections || collections.length === 0) continue;
+
+    const categoryId = category.name.toLowerCase();
+    sidebarItems.push(`<a href="#${categoryId}">${escapeHtml(category.name)}</a>`);
+
+    sectionsHtml += `
+      <section id="${categoryId}">
+        <div class="category-title">${escapeHtml(category.name)}</div>
+    `;
+
+    for (const [collectionName, collectionData] of collections) {
+      sectionsHtml += renderCollectionContent(collectionName, collectionData);
+    }
+
+    sectionsHtml += `</section>`;
+  }
+
+  // Add uncategorized collections under "Other"
+  if (uncategorized.length > 0) {
+    sidebarItems.push(`<a href="#other">Other</a>`);
+    sectionsHtml += `
+      <section id="other">
+        <div class="category-title">Other</div>
+    `;
+    for (const [collectionName, collectionData] of uncategorized) {
+      sectionsHtml += renderCollectionContent(collectionName, collectionData);
+    }
+    sectionsHtml += `</section>`;
   }
 
   const sidebarHtml = sidebarItems.join('\n');

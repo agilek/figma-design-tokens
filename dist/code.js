@@ -769,39 +769,77 @@
     .shadow-meta span { display: inline-flex; align-items: center; gap: 4px; }
     .shadow-meta .label { color: #939393; }
   `;
-        let sidebarItems = [];
-        let sectionsHtml = "";
+        const highLevelCategories = [
+          { name: "Colors", pattern: /^color/i },
+          { name: "Typography", pattern: /^typography$|^font$/i },
+          { name: "Spacing", pattern: /spacing|dimension|size|width|height|gap/i },
+          { name: "Shadows", pattern: /shadow|elevation/i },
+          { name: "Borders", pattern: /border|radius|stroke/i }
+        ];
+        const categorizedCollections = /* @__PURE__ */ new Map();
+        const uncategorized = [];
         for (const [collectionName, collectionData] of Object.entries(tokens)) {
           if (typeof collectionData !== "object" || collectionData === null) continue;
-          const collectionId = collectionName.toLowerCase().replace(/\s+/g, "-");
-          sidebarItems.push(`<a href="#${collectionId}">${escapeHtml(collectionName)}</a>`);
-          const modes = collectionData;
-          const modeEntries = Object.entries(modes);
+          let matched = false;
+          for (const category of highLevelCategories) {
+            if (category.pattern.test(collectionName)) {
+              if (!categorizedCollections.has(category.name)) {
+                categorizedCollections.set(category.name, []);
+              }
+              categorizedCollections.get(category.name).push([collectionName, collectionData]);
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) {
+            uncategorized.push([collectionName, collectionData]);
+          }
+        }
+        let sidebarItems = [];
+        let sectionsHtml = "";
+        function renderCollectionContent(collectionName, collectionData) {
+          let html = "";
+          const modeEntries = Object.entries(collectionData);
           const hasMultipleModes = modeEntries.length > 1 || modeEntries.length === 1 && !isToken(modeEntries[0][1]);
           if (hasMultipleModes) {
-            sectionsHtml += `
-        <section id="${collectionId}">
-          <div class="category-title">${escapeHtml(collectionName)}</div>
-      `;
             for (const [modeName, modeData] of modeEntries) {
               if (typeof modeData !== "object" || modeData === null) continue;
-              const sectionId = `${collectionName}-${modeName}`.toLowerCase().replace(/\s+/g, "-");
-              sectionsHtml += `
-          <div id="${sectionId}" class="mode-section">
+              html += `
+          <div class="mode-section">
             <div class="mode-title">${escapeHtml(modeName)}</div>
             ${renderTokenGroup(modeData, [])}
           </div>
         `;
             }
-            sectionsHtml += `</section>`;
           } else {
-            sectionsHtml += `
-        <section id="${collectionId}">
-          <div class="category-title">${escapeHtml(collectionName)}</div>
-          ${renderTokenGroup(modes, [])}
-        </section>
-      `;
+            html += renderTokenGroup(collectionData, []);
           }
+          return html;
+        }
+        for (const category of highLevelCategories) {
+          const collections = categorizedCollections.get(category.name);
+          if (!collections || collections.length === 0) continue;
+          const categoryId = category.name.toLowerCase();
+          sidebarItems.push(`<a href="#${categoryId}">${escapeHtml(category.name)}</a>`);
+          sectionsHtml += `
+      <section id="${categoryId}">
+        <div class="category-title">${escapeHtml(category.name)}</div>
+    `;
+          for (const [collectionName, collectionData] of collections) {
+            sectionsHtml += renderCollectionContent(collectionName, collectionData);
+          }
+          sectionsHtml += `</section>`;
+        }
+        if (uncategorized.length > 0) {
+          sidebarItems.push(`<a href="#other">Other</a>`);
+          sectionsHtml += `
+      <section id="other">
+        <div class="category-title">Other</div>
+    `;
+          for (const [collectionName, collectionData] of uncategorized) {
+            sectionsHtml += renderCollectionContent(collectionName, collectionData);
+          }
+          sectionsHtml += `</section>`;
         }
         const sidebarHtml = sidebarItems.join("\n");
         return `<!DOCTYPE html>
