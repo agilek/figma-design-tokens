@@ -1132,7 +1132,13 @@
   `;
       }
       function renderStringToken(name, token) {
-        const value = String(token.$value);
+        var _a;
+        let value;
+        if (typeof token.$value === "object" && token.$value !== null) {
+          value = JSON.stringify(token.$value);
+        } else {
+          value = String((_a = token.$value) != null ? _a : "");
+        }
         const isFontFamily = token.$type === "fontFamily";
         const isDimension = token.$type === "dimension";
         let preview = "Aa";
@@ -1141,10 +1147,10 @@
           preview = token.$value ? "\u2713" : "\u2717";
         } else if (isFontFamily) {
           preview = "Aa";
-          previewStyle = `font-family: ${value}, sans-serif; font-size: 14px;`;
+          previewStyle = `font-family: "${escapeHtml(value)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: 16px;`;
         } else if (isDimension) {
-          preview = value;
-          previewStyle = "font-size: 11px; font-weight: 500;";
+          preview = escapeHtml(value);
+          previewStyle = "font-size: 12px; font-weight: 600; color: #333;";
         }
         return `
     <div class="token-row" data-copy="${escapeHtml(value)}" style="cursor:pointer">
@@ -1159,18 +1165,31 @@
   `;
       }
       function renderTypographyToken(name, token) {
+        var _a, _b, _c, _d, _e, _f;
         const typo = token.$value;
-        const resolvedFamily = String(resolveFontReference(typo.fontFamily));
-        const resolvedSize = String(resolveFontReference(typo.fontSize));
-        const resolvedWeight = resolveFontReference(typo.fontWeight);
-        const resolvedLineHeight = String(resolveFontReference(typo.lineHeight));
-        const resolvedLetterSpacing = String(resolveFontReference(typo.letterSpacing));
-        const previewStyle = `font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
+        if (!typo || typeof typo !== "object" || !typo.fontFamily) {
+          const rawValue = typeof token.$value === "object" ? JSON.stringify(token.$value) : String((_a = token.$value) != null ? _a : "");
+          return `
+      <div class="token-row" data-copy="${escapeHtml(rawValue)}" style="cursor:pointer">
+        <div class="number-preview" style="font-size: 10px;">Aa</div>
+        <div class="token-info">
+          <div class="token-name">${escapeHtml(name)}</div>
+          <div class="token-value">${escapeHtml(rawValue)}</div>
+        </div>
+      </div>
+    `;
+        }
+        const resolvedFamily = String(resolveFontReference((_b = typo.fontFamily) != null ? _b : ""));
+        const resolvedSize = String(resolveFontReference((_c = typo.fontSize) != null ? _c : "16px"));
+        const resolvedWeight = resolveFontReference((_d = typo.fontWeight) != null ? _d : "400");
+        const resolvedLineHeight = String(resolveFontReference((_e = typo.lineHeight) != null ? _e : "1.5"));
+        const resolvedLetterSpacing = String(resolveFontReference((_f = typo.letterSpacing) != null ? _f : "0"));
+        const previewStyle = `font-family: "${escapeHtml(resolvedFamily)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
         const copyValue = `font-family: ${resolvedFamily}, -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
-        const isRef = (val) => val.startsWith("{");
+        const isRef = (val) => typeof val === "string" && val.startsWith("{");
         const formatValue = (ref, resolved) => {
           if (isRef(ref)) {
-            return `${resolved} <span style="color:#939393">${ref}</span>`;
+            return `${resolved} <span style="color:#939393">${escapeHtml(ref)}</span>`;
           }
           return String(resolved);
         };

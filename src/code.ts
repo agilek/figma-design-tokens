@@ -1382,7 +1382,14 @@ function renderNumberToken(name: string, token: W3CToken, isSpacing: boolean, is
 }
 
 function renderStringToken(name: string, token: W3CToken): string {
-  const value = String(token.$value);
+  // Safely extract value - handle objects by stringifying
+  let value: string;
+  if (typeof token.$value === 'object' && token.$value !== null) {
+    value = JSON.stringify(token.$value);
+  } else {
+    value = String(token.$value ?? '');
+  }
+
   const isFontFamily = token.$type === 'fontFamily';
   const isDimension = token.$type === 'dimension';
 
@@ -1392,11 +1399,13 @@ function renderStringToken(name: string, token: W3CToken): string {
   if (token.$type === 'boolean') {
     preview = token.$value ? '✓' : '✗';
   } else if (isFontFamily) {
+    // Font family: show preview in that font
     preview = 'Aa';
-    previewStyle = `font-family: ${value}, sans-serif; font-size: 14px;`;
+    previewStyle = `font-family: "${escapeHtml(value)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: 16px;`;
   } else if (isDimension) {
-    preview = value;
-    previewStyle = 'font-size: 11px; font-weight: 500;';
+    // Dimension: show the value itself as preview
+    preview = escapeHtml(value);
+    previewStyle = 'font-size: 12px; font-weight: 600; color: #333;';
   }
 
   return `
@@ -1415,24 +1424,40 @@ function renderStringToken(name: string, token: W3CToken): string {
 function renderTypographyToken(name: string, token: W3CToken): string {
   const typo = token.$value as W3CTypographyValue;
 
+  // Safety check - if typo is not an object with expected properties, show raw value
+  if (!typo || typeof typo !== 'object' || !typo.fontFamily) {
+    const rawValue = typeof token.$value === 'object'
+      ? JSON.stringify(token.$value)
+      : String(token.$value ?? '');
+    return `
+      <div class="token-row" data-copy="${escapeHtml(rawValue)}" style="cursor:pointer">
+        <div class="number-preview" style="font-size: 10px;">Aa</div>
+        <div class="token-info">
+          <div class="token-name">${escapeHtml(name)}</div>
+          <div class="token-value">${escapeHtml(rawValue)}</div>
+        </div>
+      </div>
+    `;
+  }
+
   // Resolve references for preview (need actual CSS values)
-  const resolvedFamily = String(resolveFontReference(typo.fontFamily));
-  const resolvedSize = String(resolveFontReference(typo.fontSize));
-  const resolvedWeight = resolveFontReference(typo.fontWeight);
-  const resolvedLineHeight = String(resolveFontReference(typo.lineHeight));
-  const resolvedLetterSpacing = String(resolveFontReference(typo.letterSpacing));
+  const resolvedFamily = String(resolveFontReference(typo.fontFamily ?? ''));
+  const resolvedSize = String(resolveFontReference(typo.fontSize ?? '16px'));
+  const resolvedWeight = resolveFontReference(typo.fontWeight ?? '400');
+  const resolvedLineHeight = String(resolveFontReference(typo.lineHeight ?? '1.5'));
+  const resolvedLetterSpacing = String(resolveFontReference(typo.letterSpacing ?? '0'));
 
   // Build inline style for preview using resolved values
-  const previewStyle = `font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
+  const previewStyle = `font-family: "${escapeHtml(resolvedFamily)}", -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
 
   // Build copy value as CSS with resolved values
   const copyValue = `font-family: ${resolvedFamily}, -apple-system, BlinkMacSystemFont, sans-serif; font-size: ${resolvedSize}; font-weight: ${resolvedWeight}; line-height: ${resolvedLineHeight}; letter-spacing: ${resolvedLetterSpacing}`;
 
   // Check if values are references (for display)
-  const isRef = (val: string) => val.startsWith('{');
+  const isRef = (val: string) => typeof val === 'string' && val.startsWith('{');
   const formatValue = (ref: string, resolved: string | number) => {
     if (isRef(ref)) {
-      return `${resolved} <span style="color:#939393">${ref}</span>`;
+      return `${resolved} <span style="color:#939393">${escapeHtml(ref)}</span>`;
     }
     return String(resolved);
   };
