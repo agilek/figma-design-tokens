@@ -728,15 +728,50 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
       line-height: 1.5;
       color: #323232;
       background: #fafafa;
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 200px;
+      height: 100vh;
+      background: #fff;
+      border-right: 1px solid #e5e5e5;
+      padding: 24px 16px;
+      overflow-y: auto;
+    }
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #939393;
+      margin-bottom: 12px;
+    }
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sidebar-nav a {
+      color: #666;
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .sidebar-nav a:hover {
+      background: #f0f0f0;
+      color: #323232;
+    }
+    .main-content {
+      margin-left: 200px;
       padding: 32px;
     }
-    .container { max-width: 1400px; margin: 0 auto; }
+    .container { max-width: 1200px; }
     h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
     .subtitle { color: #747474; margin-bottom: 32px; }
-    nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
-    nav a { color: #747474; text-decoration: none; font-size: 14px; }
-    nav a:hover { color: #323232; text-decoration: underline; }
-    nav .sep { color: #e0e0e0; }
     section { margin-bottom: 48px; scroll-margin-top: 16px; }
     .section-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
     .section-desc { color: #747474; margin-bottom: 16px; }
@@ -835,35 +870,47 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
     .shadow-meta .label { color: #939393; }
   `;
 
-  let navItems: string[] = [];
+  let sidebarItems: string[] = [];
   let sectionsHtml = '';
 
   // Process each collection
   for (const [collectionName, collectionData] of Object.entries(tokens)) {
     if (typeof collectionData !== 'object' || collectionData === null) continue;
 
+    const collectionId = collectionName.toLowerCase().replace(/\s+/g, '-');
+    sidebarItems.push(`<a href="#${collectionId}">${escapeHtml(collectionName)}</a>`);
+
     const modes = collectionData as W3CTokenGroup;
 
-    for (const [modeName, modeData] of Object.entries(modes)) {
-      if (typeof modeData !== 'object' || modeData === null) continue;
+    // Check if this collection has modes (nested structure) or direct tokens
+    const modeEntries = Object.entries(modes);
+    const hasMultipleModes = modeEntries.length > 1 || (modeEntries.length === 1 && !isToken(modeEntries[0][1]));
 
-      const sectionId = `${collectionName}-${modeName}`.toLowerCase().replace(/\s+/g, '-');
-      const sectionTitle = `${collectionName} / ${modeName}`;
-      navItems.push(`<a href="#${sectionId}">${sectionTitle}</a>`);
+    if (hasMultipleModes) {
+      for (const [modeName, modeData] of modeEntries) {
+        if (typeof modeData !== 'object' || modeData === null) continue;
 
+        const sectionId = `${collectionName}-${modeName}`.toLowerCase().replace(/\s+/g, '-');
+        const isFirstMode = modeEntries[0][0] === modeName;
+
+        sectionsHtml += `
+          <section id="${isFirstMode ? collectionId : sectionId}">
+            <div class="section-title">${escapeHtml(collectionName)} / ${escapeHtml(modeName)}</div>
+            ${renderTokenGroup(modeData as W3CTokenGroup, [])}
+          </section>
+        `;
+      }
+    } else {
       sectionsHtml += `
-        <section id="${sectionId}">
-          <div class="section-title">${escapeHtml(sectionTitle)}</div>
-          <div class="section-desc">Collection: ${escapeHtml(collectionName)}, Mode: ${escapeHtml(modeName)}</div>
-          ${renderTokenGroup(modeData as W3CTokenGroup, [])}
+        <section id="${collectionId}">
+          <div class="section-title">${escapeHtml(collectionName)}</div>
+          ${renderTokenGroup(modes, [])}
         </section>
       `;
     }
   }
 
-  const navHtml = navItems.map((item, i) =>
-    i < navItems.length - 1 ? `${item}<span class="sep">·</span>` : item
-  ).join('\n');
+  const sidebarHtml = sidebarItems.join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -874,12 +921,19 @@ function generateHtmlPreview(tokens: W3CTokenGroup, fileUrl: string | null, file
   <style>${css}</style>
 </head>
 <body>
-  <div class="container">
-    <h1>${escapeHtml(fileName)}</h1>
-    <p class="subtitle">${fileUrl ? `<a href="${fileUrl}" target="_blank" style="color: #0d99ff;">Open in Figma ↗</a> · ` : ''}Click any value to copy.</p>
-    <nav>${navHtml}</nav>
-    ${sectionsHtml}
-  </div>
+  <aside class="sidebar">
+    <div class="sidebar-title">Categories</div>
+    <nav class="sidebar-nav">
+      ${sidebarHtml}
+    </nav>
+  </aside>
+  <main class="main-content">
+    <div class="container">
+      <h1>${escapeHtml(fileName)}</h1>
+      <p class="subtitle">${fileUrl ? `<a href="${fileUrl}" target="_blank" style="color: #0d99ff;">Open in Figma ↗</a> · ` : ''}Click any value to copy.</p>
+      ${sectionsHtml}
+    </div>
+  </main>
   <script>
     document.addEventListener('click', async (e) => {
       const row = e.target.closest('[data-copy]');
