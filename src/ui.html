@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    h1 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    p {
+      color: #666;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    button {
+      background: #0d99ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background: #0b8ae6;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    button.secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    button.secondary:hover {
+      background: #e0e0e0;
+    }
+    button.secondary:disabled {
+      background: #f5f5f5;
+      color: #999;
+    }
+    #status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+    }
+    #status.success {
+      display: block;
+      background: #e6f4ea;
+      color: #137333;
+    }
+    #status.error {
+      display: block;
+      background: #fce8e6;
+      color: #c5221f;
+    }
+    #status.info {
+      display: block;
+      background: #e8f0fe;
+      color: #1967d2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Export Design Tokens</h1>
+  <p>Export your Figma variables to W3C Design Tokens format.</p>
+  <div class="btn-group">
+    <button id="export-json-btn">Export JSON</button>
+    <button id="export-html-btn" class="secondary">Export HTML Preview</button>
+  </div>
+  <div id="status"></div>
+
+  <script>
+    const exportJsonBtn = document.getElementById('export-json-btn');
+    const exportHtmlBtn = document.getElementById('export-html-btn');
+    const status = document.getElementById('status');
+
+    function setLoading(btn, loading, originalText) {
+      btn.disabled = loading;
+      btn.textContent = loading ? 'Exporting...' : originalText;
+    }
+
+    exportJsonBtn.addEventListener('click', () => {
+      setLoading(exportJsonBtn, true, 'Export JSON');
+      setLoading(exportHtmlBtn, true, 'Export HTML Preview');
+      status.className = 'info';
+      status.innerHTML = 'Processing variables...';
+      parent.postMessage({ pluginMessage: { type: 'export-json' } }, '*');
+    });
+
+    exportHtmlBtn.addEventListener('click', () => {
+      setLoading(exportJsonBtn, true, 'Export JSON');
+      setLoading(exportHtmlBtn, true, 'Export HTML Preview');
+      status.className = 'info';
+      status.innerHTML = 'Generating preview...';
+      parent.postMessage({ pluginMessage: { type: 'export-html' } }, '*');
+    });
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (msg.type === 'export-complete') {
+        setLoading(exportJsonBtn, false, 'Export JSON');
+        setLoading(exportHtmlBtn, false, 'Export HTML Preview');
+
+        if (msg.files.length === 0) {
+          status.className = 'error';
+          status.innerHTML = 'No variables found. Create some variables in this file first.';
+          return;
+        }
+
+        const file = msg.files[0];
+        const blob = new Blob([file.content], {
+          type: file.filename.endsWith('.html') ? 'text/html' : 'application/json'
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.filename;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        status.className = 'success';
+        status.innerHTML = `✅ Exported ${file.filename}`;
+      }
+    };
+  </script>
+</body>
+</html>

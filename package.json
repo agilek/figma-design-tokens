@@ -1,0 +1,16 @@
+{
+  "name": "figma-design-tokens",
+  "version": "1.0.0",
+  "description": "Figma plugin to export design variables to W3C Design Tokens JSON format",
+  "scripts": {
+    "build": "npm run build:code && npm run build:ui",
+    "build:code": "esbuild src/code.ts --bundle --outfile=dist/code.js --target=es6",
+    "build:ui": "cp src/ui.html dist/ui.html",
+    "watch": "npm run build:code -- --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0"
+  }
+}
